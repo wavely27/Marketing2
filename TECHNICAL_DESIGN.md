@@ -83,12 +83,12 @@ graph TD
 | task_id | UUID | 外键 -> tasks.id |
 | sequence | INT | 排序号 |
 | script_text | TEXT | 分镜脚本文字 |
-| narration | TEXT | 旁白文字 |
-| image_prompt | TEXT | AI 绘图提示词 (包含角色设定) |
-| image_url | VARCHAR | 生成的图片路径 |
+| narration | JSONB | 旁白内容: `{ text: string, emotion: string }` |
+| image_prompt | JSONB | AI 绘图提示词: `{ positive: string, negative: string, character: string }` |
+| image_urls | TEXT[] | 生成的图片路径（3张） |
 | audio_url | VARCHAR | 生成的配音路径 |
 | video_url | VARCHAR | 单分镜视频片段路径 |
-| duration | FLOAT | 预估/实际时长 (秒) |
+| duration | FLOAT | 预估/实际时长（秒） |
 
 ---
 

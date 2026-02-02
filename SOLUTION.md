@@ -149,7 +149,7 @@
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type VARCHAR(50) NOT NULL,          -- workflow, script, audio, image, video
-    status VARCHAR(20) NOT NULL,        -- pending, running, completed, failed
+    status VARCHAR(20) NOT NULL,        -- pending, script_gen, media_gen, video_render, success, failed
     progress INTEGER DEFAULT 0,         -- 0-100
     input_data JSONB,                   -- 输入参数
     output_data JSONB,                  -- 输出结果
