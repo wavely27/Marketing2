@@ -1,0 +1,66 @@
+SOLUTION.md
+  f7e9cd37f666718c 152
+ARCHITECTURE_REVIEW.md
+  6ec6e6e877786933 4-5
+TECHNICAL_DESIGN.md
+  90df1495289e5f4a 86-88,91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.42",
+  "base_commit_sha": "c1f2f3a4d1b1fd6a7dcf5449d7d0dbe3616c1bed",
+  "prompts": {
+    "6cca77bd0de60736": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_3e239075dffeGXkZqrLKmfSojK-413e5e2b-be72-4d10-ae22-485e31e18310",
+        "model": "unknown"
+      },
+      "human_author": "“hongbai” <hongbai@tsign.cn>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 1,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "6ec6e6e877786933": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_3e239075dffeGXkZqrLKmfSojK-67475a87-f441-4db0-bb82-2652a61de09b",
+        "model": "unknown"
+      },
+      "human_author": "“hongbai” <hongbai@tsign.cn>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 3,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "90df1495289e5f4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_3e239075dffeGXkZqrLKmfSojK-8791106a-6e63-4ccf-8ba0-5c5b0e581000",
+        "model": "unknown"
+      },
+      "human_author": "“hongbai” <hongbai@tsign.cn>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 4,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    },
+    "f7e9cd37f666718c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_3e239075dffeGXkZqrLKmfSojK-baca5233-9e84-4f66-8441-da5934f07f7f",
+        "model": "unknown"
+      },
+      "human_author": "“hongbai” <hongbai@tsign.cn>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
