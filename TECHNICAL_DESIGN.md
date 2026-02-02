@@ -113,6 +113,15 @@ graph TD
 *   `POST /api/v1/scenes/{scene_id}/regenerate_image`: 重新生成该分镜图片
 *   `POST /api/v1/scenes/{scene_id}/regenerate_audio`: 重新生成该分镜配音
 
+### 3.4 小说爬取 (Novel Crawling)
+*   `POST /api/v1/novel/crawl`: 启动小说爬取任务
+    *   Input: `{ "url": "https://...", "source": "fanqie|起点|笔趣阁" }`
+    *   Output: `{ "task_id": "uuid" }`
+*   `GET /api/v1/novel/status/{task_id}`: 获取爬取进度
+    *   Output: `{ "status": "crawling|completed|failed", "chapters_crawled": 15, "total_chapters": 100 }`
+*   `GET /api/v1/novel/download/{task_id}`: 下载爬取的小说内容
+    *   Output: `{ "title": "...", "author": "...", "chapters": [...] }`
+
 ---
 
 ## 4. 核心业务流程 (Core Business Logic)
@@ -141,6 +150,40 @@ graph TD
     *   **字幕**: 硬字幕 (Hardsub)。字体: 思源黑体 Heavy, 白色, 黑色描边, 底部居中。
     *   **混音**: 混入选定的 BGM (音量 20%) + TTS 人声 (音量 100%)。
     *   **输出**: H.264 MP4, 1080x1920, 30fps。
+
+### 4.3 小说爬取服务 (Novel Crawling Service)
+
+#### 支持的站点
+1. **番茄小说** (主站)
+   *   反爬策略: 字体加密（已破解）
+   *   稳定性: ⭐⭐⭐⭐⭐
+   *   内容质量: 官方正版，排版规范
+
+2. **笔趣阁镜像站** (备用)
+   *   反爬策略: 低防护，需 User-Agent 轮换
+   *   稳定性: ⭐⭐⭐⭐
+   *   内容质量: 较杂，需过滤广告
+
+3. **起点小说网** (备用)
+   *   反爬策略: 需登录 + Cookie 管理
+   *   稳定性: ⭐⭐⭐
+   *   内容质量: 高质量正版
+
+#### 技术实现
+*   **HTTP 客户端**: `httpx` (异步) + `BeautifulSoup4` (解析)
+*   **已废弃**: `Playwright` (太重，切换到轻量级方案)
+*   **反爬策略**:
+    *   User-Agent 池（10+ 模拟浏览器）
+    *   请求间隔随机化（2-5 秒）
+    *   失败自动切换源站
+*   **数据存储**: 爬取内容存储到 `novels` 表（JSONB）
+
+#### 爬取流程
+1. **元数据提取**: 标题、作者、简介、总章节数
+2. **章节列表**: 抓取所有章节 URL 和标题
+3. **增量抓取**: 支持断点续爬（记录已抓取章节）
+4. **内容清洗**: 去除广告、HTML 标签、特殊字符
+5. **错误处理**: 连续失败 3 次自动切换源站
 
 ---
 
