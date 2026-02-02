@@ -1,0 +1,23 @@
+SOLUTION.md
+  e00a885d9c3da83c 1-436
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.40",
+  "base_commit_sha": "d75c38afd27dd5689e8466ed5a4267353f95917c",
+  "prompts": {
+    "e00a885d9c3da83c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_3e3fe3d96ffernt0cwdhdvXSkv-99315a1e-be43-4111-8631-8cc0142a7f22",
+        "model": "unknown"
+      },
+      "human_author": "“hongbai” <hongbai@tsign.cn>",
+      "messages": [],
+      "total_additions": 436,
+      "total_deletions": 0,
+      "accepted_lines": 436,
+      "overriden_lines": 0
+    }
+  }
+}
