@@ -1,16 +1,10 @@
-# Marketing2 技术详细设计方案
-
-> **版本**: v1.0
-> **状态**: Draft
-> **分支**: design/technical-spec
-
----
-
 ## 1. 系统架构设计 (System Architecture)
 
 ### 1.1 总体架构 (Micro-Service Monolith)
 
 虽然是单体仓库 (Monorepo)，但在逻辑上采用微服务分层架构，便于未来拆分。
+
+**部署模式**: 单用户 (Single User Mode) - 无需登录认证系统。
 
 ```mermaid
 graph TD
@@ -31,7 +25,7 @@ graph TD
     subgraph "External AI Services (Aliyun)"
         Worker -->|Generate Script| LLM[Qwen-Plus LLM]
         Worker -->|Generate Image| Img[Wanx-v1]
-        Worker -->|Generate Audio| TTS[CosyVoice/Sambert]
+        Worker -->|Generate Audio| TTS[Sambert (Standard Voice)]
     end
     
     subgraph "Media Processing"
@@ -73,15 +67,14 @@ graph TD
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | UUID | 主键 |
-| user_id | VARCHAR | 用户ID (预留) |
-| type | VARCHAR | 任务类型 (e.g., `one_click_video`) |
+| type | VARCHAR | 任务类型 (e.g., `novel_to_video`) |
 | status | ENUM | `pending`, `script_gen`, `media_gen`, `video_render`, `success`, `failed` |
 | progress | INT | 总体进度 (0-100) |
 | created_at | TIMESTAMP | |
 | updated_at | TIMESTAMP | |
-| input_params | JSONB | 用户的原始输入 (小说文本, 风格偏好) |
+| input_params | JSONB | 用户的原始输入 (小说文本, 风格偏好, 角色设定) |
 | output_url | VARCHAR | 最终视频地址 |
-| error_msg | TEXT | 失败原因 |
+| error_msg | TEXT | 失败原因 (如: 敏感内容拦截) |
 
 #### `scenes` (分镜表 - 核心资产)
 | 字段 | 类型 | 说明 |
@@ -91,7 +84,7 @@ graph TD
 | sequence | INT | 排序号 |
 | script_text | TEXT | 分镜脚本文字 |
 | narration | TEXT | 旁白文字 |
-| image_prompt | TEXT | AI 绘图提示词 |
+| image_prompt | TEXT | AI 绘图提示词 (包含角色设定) |
 | image_url | VARCHAR | 生成的图片路径 |
 | audio_url | VARCHAR | 生成的配音路径 |
 | video_url | VARCHAR | 单分镜视频片段路径 |
@@ -105,7 +98,8 @@ graph TD
 
 ### 3.1 任务控制
 *   `POST /api/v1/workflow/create`: 创建新视频任务
-    *   Input: `{ "novel_text": "...", "style": "comic", "voice": "male_01" }`
+    *   Input: `{ "novel_text": "...", "role_setting": "男主黑发..." }`
+    *   Constraint: `novel_text` max 5000 chars.
     *   Output: `{ "task_id": "uuid" }`
 *   `GET /api/v1/workflow/{task_id}`: 获取任务详情（包含所有分镜状态）
 *   `POST /api/v1/workflow/{task_id}/cancel`: 取消任务
@@ -117,52 +111,61 @@ graph TD
 ### 3.3 分镜编辑 (Human-in-the-loop)
 *   `PUT /api/v1/scenes/{scene_id}`: 修改分镜内容（如修改提示词、重写旁白）
 *   `POST /api/v1/scenes/{scene_id}/regenerate_image`: 重新生成该分镜图片
+*   `POST /api/v1/scenes/{scene_id}/regenerate_audio`: 重新生成该分镜配音
 
 ---
 
 ## 4. 核心业务流程 (Core Business Logic)
 
-### 4.1 一键生成 Pipeline
+### 4.1 核心参数配置
+*   **分镜策略**: 1 段文本 (Paragraph) -> 3 个分镜画面 (Scenes)。
+*   **视频比例**: 9:16 (竖屏, 1080x1920)。
+*   **BGM 策略**: 内置 5 首免版权音乐 (Happy, Sad, Tense, Relaxed, Action)，根据脚本情感标签自动匹配。
 
-1.  **脚本切分 (Script Breakdown)**
+### 4.2 一键生成 Pipeline
+
+1.  **脚本优化 & 切分 (Script Optimization)**
     *   Worker 调用 LLM (Qwen)。
-    *   Prompt: "你是一个专业的短视频分镜师。将以下小说片段改编为 6-10 个画面的分镜脚本。输出 JSON 格式，包含：画面描述(prompt)、旁白(narration)、景别(shot_type)。"
-    *   Output: List[Scene] -> 存入 DB `scenes` 表。
+    *   **Step 1 (Role Extraction)**: 提取主角特征 (如 "男主:黑发; 女主:红裙") -> 存入 `input_params.role_setting`。
+    *   **Step 2 (Script Rewrite)**: 将小说改写为有吸引力的短视频文案。
+    *   **Step 3 (Breakdown)**: 按 "1段话 -> 3镜头" 规则切分。输出 JSON List。
+    *   *Prompt Key*: "请保持角色一致性，所有画面描述前必须加上: {role_setting}"。
 
 2.  **并行素材生成 (Parallel Asset Generation)**
     *   **Group 任务**: 为每个 Scene 创建子任务。
-    *   **绘图**: 调用 Wanx-v1，传入 `image_prompt` + 风格修饰词 (如 "anime style, 4k, detailed")。
-    *   **配音**: 调用 TTS，传入 `narration`。计算音频时长，更新 `scenes.duration`。
+    *   **绘图**: 调用 Wanx-v1。若 API 返回敏感拦截，标记该 Scene 为 Error，前端提示用户修改 Prompt。
+    *   **配音**: 调用 Sambert TTS (标准旁白音色)。不进行情感切换。
 
 3.  **视频合成 (Video Assembly)**
-    *   **Ken Burns Effect**: 使用 FFmpeg 对静态图片应用推拉镜头效果 (Zoom in/out/pan)。
-    *   **字幕烧录**: 将旁白转为 SRT 字幕并烧录进视频。
-    *   **拼接**: 将所有 Scene 的视频片段 concat 为最终 MP4。
-    *   **配乐**: (可选) 混入背景音乐。
+    *   **Ken Burns Effect**: 对 9:16 画布进行推拉运镜。
+    *   **字幕**: 硬字幕 (Hardsub)。字体: 思源黑体 Heavy, 白色, 黑色描边, 底部居中。
+    *   **混音**: 混入选定的 BGM (音量 20%) + TTS 人声 (音量 100%)。
+    *   **输出**: H.264 MP4, 1080x1920, 30fps。
 
 ---
 
 ## 5. 异常处理与重试策略
 
-*   **AI API 限流**: 使用 `Tenacity` 库实现指数退避重试 (Exponential Backoff)。
-*   **FFmpeg 失败**: 捕获 stderr，提取错误关键帧，允许用户针对该分镜重试。
-*   **任务超时**: Celery 设置 `soft_time_limit=600s` (单镜头), `3600s` (全流程)。
+*   **敏感内容**: AI 接口报错直接透传，不自动重试，交由用户人工干预。
+*   **爬虫策略**: 预置 3 个低防护小说站源 (e.g., 笔趣阁镜像)。若源站 A 失败，自动尝试源站 B。
+*   **API 限流**: 使用 `Tenacity` 库实现指数退避重试。
 
 ## 6. 前端实现建议 (Frontend)
 
-*   **状态管理**: 使用 Pinia Store `useTaskStore` 维护当前任务的完整状态树。
-*   **乐观更新**: 修改分镜文字后，本地立即更新 UI，后台异步保存。
-*   **播放器**: 使用 `video.js` 或原生 `<video>` 预览生成的片段。
+*   **状态管理**: Pinia Store。
+*   **操作流**: 
+    1. 输入文本 -> (生成中) -> 2. 脚本/分镜列表页 (可编辑/重绘) -> 3. 最终预览页。
+*   **播放器**: 原生 `<video>` 标签即可。
 
 ## 7. 部署方案 (Deployment)
 
 *   **Docker Compose**:
     *   `app`: FastAPI
     *   `worker-ai`: Celery (Concurrency: 4)
-    *   `worker-video`: Celery (Concurrency: 1, 避免 CPU 抢占)
+    *   `worker-video`: Celery (Concurrency: 1)
     *   `redis`: Alpine
     *   `postgres`: Alpine
-*   **Volume**: 挂载 `./output` 目录到宿主机，确保生成文件持久化。
+*   **Volume**: 挂载 `./output` 目录。
 
 ---
 *Generated by Red (AI Butler) for Marketing2 Project*
