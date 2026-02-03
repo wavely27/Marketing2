@@ -9,6 +9,9 @@ python-dotenv>=1.0.1
 celery>=5.3.4
 redis>=5.0.1
 
+# Phase 5: Video Rendering (requires ffmpeg binary installed)
+ffmpeg-python>=0.2.0
+
 # LLM Integration (DashScope/Qwen)
 dashscope>=1.14.0
 # Alternative: openai>=1.0.0  # Uncomment if using OpenAI-compatible client

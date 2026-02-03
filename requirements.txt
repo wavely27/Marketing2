@@ -1,0 +1,28 @@
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+celery[redis]==5.3.4
+redis==5.0.1
+pydantic==2.5.3
+
+# Database
+sqlalchemy[asyncio]==2.0.25
+alembic==1.13.1
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# AI/ML Services
+dashscope==1.14.0  # Qwen LLM (Aliyun)
+# requests is built-in to Python stdlib
+
+# Configuration
+python-dotenv==1.0.0
+pyyaml==6.0.1
+
+# Utilities
+python-multipart==0.0.6
+aiofiles==23.2.1
+tenacity==8.2.3  # Retry logic
+
+# Video Rendering
+ffmpeg-python==0.2.0  # FFmpeg wrapper (requires ffmpeg binary installed)
