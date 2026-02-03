@@ -1,0 +1,14 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+sqlalchemy>=2.0.36
+psycopg2-binary>=2.9.10
+pydantic>=2.10.3
+python-dotenv>=1.0.1
+
+# Phase 3: Async Task Processing & LLM Integration
+celery>=5.3.4
+redis>=5.0.1
+
+# LLM Integration (DashScope/Qwen)
+dashscope>=1.14.0
+# Alternative: openai>=1.0.0  # Uncomment if using OpenAI-compatible client
